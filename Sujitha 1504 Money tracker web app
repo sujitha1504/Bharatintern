@@ -1,0 +1,195 @@
+mkdir money-tracker
+cd money-tracker
+npm init -y
+npm install express body-parser mongoose ejs
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= title %></title>
+    <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+    <header>
+        <h1><a href="/">Money Tracker</a></h1>
+        <nav>
+            <a href="/">Home</a>
+            <a href="/add-transaction">Add Transaction</a>
+        </nav>
+    </header>
+    <main>
+        <%= content %>
+    </main>
+</body>
+</html>
+<h2>Add a New Transaction</h2>
+<form action="/add-transaction" method="POST">
+    <label for="type">Type:</label>
+    <select id="type" name="type" required>
+        <option value="income">Income</option>
+        <option value="expense">Expense</option>
+    </select>
+    
+    <label for="date">Date:</label>
+    <input type="date" id="date" name="date" required>
+    
+    <label for="description">Description:</label>
+    <input type="text" id="description" name="description" required>
+    
+    <label for="amount">Amount:</label>
+    <input type="number" id="amount" name="amount" step="0.01" required>
+    
+    <button type="submit">Add Transaction</button>
+</form>
+body {
+    font-family: Arial, sans-serif;
+    background-color: #f4f4f4;
+    margin: 0;
+    padding: 0;
+}
+
+header {
+    background: #333;
+    color: white;
+    padding: 1em 0;
+    text-align: center;
+}
+
+header nav a {
+    color: white;
+    margin: 0 10px;
+    text-decoration: none;
+}
+
+main {
+    padding: 20px;
+}
+
+h2 {
+    margin-top: 0;
+}
+
+form {
+    display: flex;
+    flex-direction: column;
+}
+
+label {
+    margin: 10px 0 5px;
+}
+
+input, select {
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 3px;
+    margin-bottom: 10px;
+}
+
+button {
+    padding: 10px;
+    border: none;
+    background-color: #5cb85c;
+    color: white;
+    border-radius: 3px;
+    cursor: pointer;
+}
+
+button:hover {
+    background-color: #4cae4c;
+}
+
+ul {
+    list-style: none;
+    padding: 0;
+}
+
+li {
+    background: white;
+    margin: 10px 0;
+    padding: 15px;
+    border-radius: 5px;
+    box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    display: flex;
+    justify-content: space-between;
+}
+
+li.income {
+    border-left: 5px solid green;
+}
+
+li.expense {
+    border-left: 5px solid red;
+}const express = require('express');
+const bodyParser = require('body-parser');
+const mongoose = require('mongoose');
+const ejs = require('ejs');
+const path = require('path');
+
+const app = express();
+const port = 3000;
+
+// Middleware
+app.set('view engine', 'ejs');
+app.use(bodyParser.urlencoded({ extended: true }));
+app.use(express.static(path.join(__dirname, 'public')));
+
+// MongoDB Connection
+mongoose.connect('mongodb://localhost:27017/moneyTrackerDB', { useNewUrlParser: true, useUnifiedTopology: true });
+
+// Mongoose Schema and Model
+const transactionSchema = new mongoose.Schema({
+    type: String,
+    date: Date,
+    description: String,
+    amount: Number
+});
+
+const Transaction = mongoose.model('Transaction', transactionSchema);
+
+// Routes
+app.get('/', (req, res) => {
+    Transaction.find({}, (err, transactions) => {
+        res.render('layout', { title: 'Home', content: ejs.renderFile(path.join(__dirname, 'views/home.ejs'), { transactions }) });
+    });
+});
+
+app.get('/add-transaction', (req, res) => {
+    res.render('layout', { title: 'Add Transaction', content: ejs.renderFile(path.join(__dirname, 'views/add-transaction.ejs')) });
+});
+
+app.post('/add-transaction', (req, res) => {
+    const newTransaction = new Transaction({
+        type: req.body.type,
+        date: req.body.date,
+        description: req.body.description,
+        amount: req.body.amount
+    });
+
+    newTransaction.save((err) => {
+        if (err) {
+            res.send('There was an error saving the transaction.');
+        } else {
+            res.redirect('/');
+        }
+    });
+});
+
+// Start Server
+app.listen(port, () => {
+    console.log(`Server is running on http://localhost:${port}`);
+});money-tracker/
+│
+├── node_modules/
+│
+├── public/
+│   ├── styles.css
+│
+├── views/
+│   ├── layout.ejs
+│   ├── home.ejs
+│   ├── add-transaction.ejs
+│
+├── server.js
+│
+└── package.jsonnode server.js
